@@ -17,8 +17,6 @@
 O MintSkin guarda o visual do desktop como **skins**, cada uma com nome, capa e
 autor. Salve quantas quiser, troque entre elas e sempre volte para a anterior.
 
-## Vitrine
-
 <p align="center">
   <img src="docs/imagens/inicio-escuro.png" alt="Início do MintSkin no tema escuro" width="860">
 </p>
