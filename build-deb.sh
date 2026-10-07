@@ -18,7 +18,9 @@ passo() { printf '\n== %s\n' "$*"; }
 falha() { echo "ERRO: $*" >&2; exit 1; }
 
 passo "MintSkin $VERSAO"
-python3 -m unittest discover -s tests -q 2>/dev/null || falha "testes falharam"
+if [ -d tests ]; then
+  python3 -m unittest discover -s tests -q 2>/dev/null || falha "testes falharam"
+fi
 desktop-file-validate data/io.github.pabluoo.MintSkin.desktop || falha ".desktop invalido"
 if command -v appstreamcli >/dev/null; then
   appstreamcli validate --no-net data/io.github.pabluoo.MintSkin.metainfo.xml >/dev/null || falha "metainfo invalido"

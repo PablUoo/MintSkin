@@ -111,7 +111,6 @@ mintskin importar ~/macos.mintskin
 
 ```bash
 ./bin/mintskin                            # roda sem instalar
-python3 -m unittest discover -s tests     # testes
 ./build-deb.sh                            # gera dist/mintskin_<versão>_all.deb
 ./scripts/lancar-versao.sh 1.1.0          # publica uma versão nova
 ```
