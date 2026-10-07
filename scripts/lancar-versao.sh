@@ -11,7 +11,7 @@ git diff --quiet || { echo "ha mudancas sem commit; faca o commit antes"; exit 1
 sed -i "s/^__version__ = .*/__version__ = \"$VERSAO\"/" mintskin/__init__.py
 ./build-deb.sh
 DEB="dist/mintskin_${VERSAO}_all.deb"
-(cd dist && sha256sum "$(basename "$DEB")" > SHA256SUMS)
+
 
 git commit -am "Versao $VERSAO"
 git tag "v$VERSAO"

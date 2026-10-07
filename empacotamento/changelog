@@ -1,0 +1,10 @@
+mintskin (1.0.0) stable; urgency=medium
+
+  * Primeira versao.
+  * Skins com nome, capa e autor; skin oficial macOS Tahoe.
+  * Galeria com skins oficiais e da comunidade, perfis e favoritos.
+  * Conta local para guardar e publicar skins.
+  * Backup obrigatorio antes da primeira troca e desfazer.
+  * Atualizacao automatica pelas Releases do GitHub.
+
+ -- MintSkin <PablUoo@users.noreply.github.com>  Wed, 07 Oct 2026 15:30:00 -0300

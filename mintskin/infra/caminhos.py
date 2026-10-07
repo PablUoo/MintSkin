@@ -6,7 +6,7 @@ DADOS = Path(HOME, ".local/share/mintskin")
 SKINS_USUARIO = DADOS / "skins"
 INSTALADOS = DADOS / "instalados"
 DESFAZER = DADOS / "desfazer"
-NUVEM_LOCAL = DADOS / "nuvem"            # "servidor" provisorio: contas e galeria (docs/NUVEM.md)
+NUVEM_LOCAL = DADOS / "nuvem"
 CONFIG = Path(HOME, ".config/mintskin")
 CACHE = Path(HOME, ".cache/mintskin")
 
