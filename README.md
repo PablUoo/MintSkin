@@ -1,9 +1,52 @@
-# MintSkin
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="mintskin/ui/marca/logo-escuro.svg">
+    <img src="mintskin/ui/marca/logo-claro.svg" alt="MintSkin" width="360">
+  </picture>
+</p>
 
-Troque o visual do seu Linux Mint Cinnamon com um clique.
+<p align="center"><strong>Troque o visual do seu Linux Mint Cinnamon com um clique.</strong></p>
+
+<p align="center">
+  <a href="https://github.com/PablUoo/MintSkin/releases"><img src="https://img.shields.io/github/v/release/PablUoo/MintSkin?color=FFC400&label=vers%C3%A3o&labelColor=14151F" alt="Versão"></a>
+  <img src="https://img.shields.io/badge/Linux%20Mint-Cinnamon-FFC400?labelColor=14151F" alt="Linux Mint Cinnamon">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-FFC400?labelColor=14151F" alt="Python 3.10+">
+  <img src="https://img.shields.io/badge/GTK-3-FFC400?labelColor=14151F" alt="GTK 3">
+</p>
 
 O MintSkin guarda o visual do desktop como **skins**, cada uma com nome, capa e
 autor. Salve quantas quiser, troque entre elas e sempre volte para a anterior.
+
+## Vitrine
+
+<p align="center">
+  <img src="docs/imagens/inicio-escuro.png" alt="Início do MintSkin no tema escuro" width="860">
+</p>
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/imagens/inicio-claro.png" alt="Início no tema claro"><br>
+      <sub><b>Início</b> · tema claro</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/imagens/galeria.png" alt="Galeria"><br>
+      <sub><b>Galeria</b> · oficiais e da comunidade</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/imagens/minhas-skins.png" alt="Minhas skins"><br>
+      <sub><b>Minhas skins</b> · aplicar, renomear, enviar</sub>
+    </td>
+    <td align="center">
+      <img src="docs/imagens/sobre.png" alt="Sobre o MintSkin"><br>
+      <sub><b>Sobre</b> · marca e proprietário</sub>
+    </td>
+  </tr>
+</table>
+
+## Recursos
 
 - **Skin oficial macOS Tahoe** incluída: barra no topo, dock e menu com a maçã
 - **Galeria** com skins oficiais e da comunidade: veja os detalhes, o perfil do
