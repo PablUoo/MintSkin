@@ -1,10 +1,17 @@
 """Páginas da janela. Cada uma monta seus widgets e sabe se atualizar."""
+from datetime import datetime
+from types import SimpleNamespace
+
 from gi.repository import Gtk
 
 from .. import __version__
 from . import textos as T
 from .widgets import (Avatar, BotaoFavorito, Capa, botao, css, data_br, grade, icone, link,
                       preencher, rotulo, tamanho_br, vazio)
+
+
+def contar(n, singular, plural):
+    return f"{n} {singular if n == 1 else plural}"
 
 
 def rolavel(conteudo):
@@ -101,49 +108,59 @@ class Pagina:
 class Inicio(Pagina):
     def __init__(self, j):
         super().__init__(j)
+        self.saudacao = rotulo("", ["ms-titulo-pagina"])
+        self.resumo = rotulo("", ["ms-dim"])
+        topo = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        topo.pack_start(self.saudacao, False, False, 0)
+        topo.pack_start(self.resumo, False, False, 0)
         self.aviso_versao = aviso("software-update-available-symbolic", "", "Veja o que mudou e atualize.",
                                   ("Atualizar", j.atualizar_app), ("Agora não", j.ignorar_versao, "ms-secundario"))
         self.aviso_backup = aviso("dialog-warning-symbolic", T.AVISO_BACKUP_TITULO, T.AVISO_BACKUP_TEXTO,
                                   (T.SALVAR, lambda: j.salvar_atual(primeiro_backup=True)))
         self.hero = Gtk.Box()
-        self.atalhos = Gtk.Box(spacing=20, homogeneous=True)
-        for w in (self.aviso_versao, self.aviso_backup, self.hero):
+        self.recentes = self._secao("Suas skins recentes", "Ver todas", "minhas")
+        self.vazio_recentes = vazio(*T.VAZIO_MINHAS, (T.SALVAR, j.salvar_atual))
+        self.destaques = self._secao("Destaques da galeria", "Abrir galeria", "galeria")
+        for w in (topo, self.aviso_versao, self.aviso_backup, self.hero, self.recentes.caixa,
+                  self.vazio_recentes, self.destaques.caixa):
             self.caixa.pack_start(w, False, False, 0)
-        self.caixa.pack_start(self.atalhos, False, False, 0)
+
+    def _secao(self, titulo, ver_mais, destino):
+        caixa = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        cab = Gtk.Box(spacing=12)
+        cab.pack_start(rotulo(titulo, ["ms-titulo-secao"]), True, True, 0)
+        mais = botao(ver_mais, "ms-fantasma", ao_clicar=lambda: self.j.ir_para(destino))
+        mais.get_child().set_halign(Gtk.Align.END)
+        cab.pack_end(mais, False, False, 0)
+        caixa.pack_start(cab, False, False, 0)
+        g = grade()
+        caixa.pack_start(g, False, False, 0)
+        return SimpleNamespace(caixa=caixa, grade=g)
 
     def atualizar(self):
         j = self.j
+        hora = datetime.now().hour
+        ola = "Bom dia" if hora < 12 else "Boa tarde" if hora < 18 else "Boa noite"
+        nome = (j.conta.nome if j.conta else j.app.skins.usuario).split()[0]
+        self.saudacao.set_text(f"{ola}, {nome}")
+        minhas = j.app.skins.do_usuario()
+        galeria = j.app.nuvem.galeria()
+        self.resumo.set_text(f"{contar(len(minhas), 'skin salva', 'skins salvas')} · {len(galeria)} na galeria")
         nova = j.nova_versao
         self.aviso_versao.set_visible(bool(nova))
         if nova:
             self.aviso_versao.titulo.set_text(f"MintSkin {nova.versao} disponível")
         self.aviso_backup.set_visible(j.app.skins.precisa_backup())
         self._hero(j.ativa)
-        for f in self.atalhos.get_children():
+        preencher(self.recentes.grade, self.vazio_recentes, [j.card_local(s) for s in minhas[:4]])
+        self.recentes.caixa.set_visible(bool(minhas))
+        destaques = [j.card_item(i) for i in galeria[:4]]
+        for f in self.destaques.grade.get_children():
             f.destroy()
-        conta = j.conta
-        for icn, titulo, numero, desc, destino in (
-                ("view-grid-symbolic", "Galeria", len(j.app.nuvem.galeria()), "skins para baixar", "galeria"),
-                ("folder-symbolic", "Minhas skins", len(j.app.skins.do_usuario()), "salvas aqui", "minhas"),
-                ("avatar-default-symbolic", "Conta", None,
-                 conta.nome if conta else "Entre para guardar e publicar", "conta")):
-            self.atalhos.pack_start(self._atalho(icn, titulo, numero, desc, destino), True, True, 0)
-        self.atalhos.show_all()
-
-    def _atalho(self, icn, titulo, numero, desc, destino):
-        b = css(Gtk.Button(relief=Gtk.ReliefStyle.NONE), "ms-tile")
-        caixa = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        topo = Gtk.Box(spacing=10)
-        topo.pack_start(css(icone(icn, Gtk.IconSize.LARGE_TOOLBAR), "ms-icone-secao"), False, False, 0)
-        topo.pack_start(rotulo(titulo, ["ms-card-nome"]), True, True, 0)
-        topo.pack_end(icone("go-next-symbolic", Gtk.IconSize.BUTTON, "ms-dim"), False, False, 0)
-        caixa.pack_start(topo, False, False, 0)
-        if numero is not None:
-            caixa.pack_start(rotulo(str(numero), ["ms-tile-numero"]), False, False, 0)
-        caixa.pack_start(rotulo(desc, ["ms-dim", "ms-pequeno"]), False, False, 0)
-        b.add(caixa)
-        b.connect("clicked", lambda _b: self.j.ir_para(destino))
-        return b
+        for c in destaques:
+            self.destaques.grade.add(c)
+        self.destaques.grade.show_all()
+        self.destaques.caixa.set_visible(bool(destaques))
 
     def _hero(self, ativa):
         j = self.j
@@ -238,7 +255,6 @@ class Detalhe(Pagina):
         j = self.j
         self.item = item
         self.limpar()
-        self.caixa.pack_start(self._voltar(), False, False, 0)
         topo = Gtk.Box(spacing=28)
         topo.pack_start(capa_grande(j.app.capas, item), False, False, 0)
         lado = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8, valign=Gtk.Align.CENTER)
@@ -273,11 +289,6 @@ class Detalhe(Pagina):
         self.caixa.pack_start(grupo("Detalhes", linhas), False, False, 0)
         self.caixa.show_all()
 
-    def _voltar(self):
-        b = botao("Voltar", "ms-fantasma", icone_nome="go-previous-symbolic", ao_clicar=self.j.voltar)
-        b.set_halign(Gtk.Align.START)
-        return b
-
     def atualizar(self):
         if getattr(self, "item", None):
             try:
@@ -291,7 +302,6 @@ class Perfil(Detalhe):
         j = self.j
         self.perfil = perfil
         self.limpar()
-        self.caixa.pack_start(self._voltar(), False, False, 0)
         topo = Gtk.Box(spacing=20)
         topo.pack_start(Avatar(perfil.iniciais, grande=True), False, False, 0)
         textos = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4, valign=Gtk.Align.CENTER)
@@ -300,11 +310,11 @@ class Perfil(Detalhe):
         if perfil.oficial:
             nome.pack_start(css(Gtk.Label(label="Oficial"), "ms-badge", "ms-destaque"), False, False, 0)
         textos.pack_start(nome, False, False, 0)
-        resumo = [f"{len(perfil.itens)} skins publicadas"]
+        resumo = [contar(len(perfil.itens), "skin publicada", "skins publicadas")]
         if perfil.desde:
             resumo.append(f"na galeria desde {data_br(perfil.desde, hora=False)}")
         if not perfil.oficial:
-            resumo.append(f"{perfil.downloads} downloads")
+            resumo.append(contar(perfil.downloads, "download", "downloads"))
         textos.pack_start(rotulo(" · ".join(resumo), ["ms-dim"]), False, False, 0)
         topo.pack_start(textos, True, True, 0)
         self.caixa.pack_start(topo, False, False, 0)
@@ -422,8 +432,6 @@ class Preferencias(Pagina):
         ]), False, False, 0)
 
         self.caixa.pack_start(grupo("Avançado", [
-            linha("Importar pasta de skin", "Uma skin em pasta, ou o pacote/ do antigo mac.sh.",
-                  botao("Importar", "ms-secundario", ao_clicar=lambda: j.importar(pasta=True))),
             linha("Pasta das minhas skins", None,
                   botao("Abrir", "ms-secundario", ao_clicar=lambda: j.abrir_pasta(j.app.skins.pasta_minhas_skins()))),
             linha("Tela de login original", "Desfaz o visual aplicado na tela de login.",

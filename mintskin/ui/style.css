@@ -521,3 +521,41 @@ tooltip.background {
 .ms-janela stackswitcher button:checked label {
   color: @ms_sobre_destaque;
 }
+
+/* ------------------------------------------------------------ trilha de navegação */
+.ms-janela button.ms-passo {
+  background-image: none;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  box-shadow: none;
+  padding: 3px 10px;
+  min-height: 24px;
+}
+
+.ms-janela button.ms-passo label,
+.ms-janela button.ms-passo image {
+  color: @ms_texto_2;
+  font-weight: 600;
+}
+
+.ms-janela button.ms-passo:hover {
+  background-color: @ms_superficie_2;
+}
+
+.ms-janela button.ms-passo:hover label,
+.ms-janela button.ms-passo:hover image {
+  color: @ms_texto;
+}
+
+.ms-janela button.ms-passo-atual,
+.ms-janela button.ms-passo-atual:hover {
+  background-color: @ms_superficie_2;
+  border-color: @ms_borda;
+}
+
+.ms-janela button.ms-passo-atual label,
+.ms-janela button.ms-passo-atual image {
+  color: @ms_texto;
+  font-weight: 800;
+}

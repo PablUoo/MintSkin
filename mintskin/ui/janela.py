@@ -35,7 +35,7 @@ class Janela(Gtk.ApplicationWindow):
         self.nova_versao = None
         self.ativa = None
         self.conta = None
-        self._historico = []
+        self._trilha = []
         self._toast_id = 0
         self._toast_acao = None
         self._variante = None
@@ -109,16 +109,20 @@ class Janela(Gtk.ApplicationWindow):
     def _barra(self):
         hb = Gtk.HeaderBar(show_close_button=True)
         self.set_titlebar(hb)
-        self.titulo_barra = css(Gtk.Label(label=T.APP), "title")
-        hb.set_custom_title(self.titulo_barra)
+        hb.set_custom_title(Gtk.Box())
         self.set_title(T.APP)
-        self.btn_desfazer = botao("", "ms-fantasma", icone_nome="edit-undo-symbolic", dica=T.DESFAZER,
-                                  ao_clicar=self.desfazer)
-        hb.pack_start(self.btn_desfazer)
+        self.btn_voltar = botao("", "ms-fantasma", icone_nome="go-previous-symbolic", dica="Voltar",
+                                ao_clicar=self.voltar)
+        hb.pack_start(self.btn_voltar)
+        self.trilha = css(Gtk.Box(spacing=4), "ms-trilha")
+        hb.pack_start(self.trilha)
         hb.pack_end(botao(T.SALVAR, "ms-primario", icone_nome="list-add-symbolic",
                           dica="Guarda o visual da tela como uma skin sua", ao_clicar=self.salvar_atual))
         hb.pack_end(botao("Importar", "ms-fantasma", icone_nome="document-open-symbolic",
                           dica="Importar um arquivo .mintskin", ao_clicar=self.importar))
+        self.btn_desfazer = botao("", "ms-fantasma", icone_nome="edit-undo-symbolic", dica=T.DESFAZER,
+                                  ao_clicar=self.desfazer)
+        hb.pack_end(self.btn_desfazer)
 
     def _lateral(self):
         lateral = css(Gtk.Box(orientation=Gtk.Orientation.VERTICAL), "ms-lateral")
@@ -174,15 +178,53 @@ class Janela(Gtk.ApplicationWindow):
         linha.set_header(rotulo(linha.grupo, ["ms-rotulo-grupo"]) if novo else None)
 
     def _navegou(self, _lista, linha):
-        if linha is not None:
-            self._historico.clear()
-            self._mostrar(linha.pagina)
+        if linha is None or getattr(self, "_sincronizando", False):
+            return
+        self._trilha = [("inicio", T.NAV["inicio"][1], None)]
+        if linha.pagina != "inicio":
+            self._trilha.append((linha.pagina, T.NAV[linha.pagina][1], None))
+        self._mostrar()
 
-    def _mostrar(self, pagina):
+    def _mostrar(self):
+        """Mostra o último passo da trilha e redesenha a trilha."""
+        pagina, _rotulo, restaurar = self._trilha[-1]
+        if restaurar:
+            restaurar()
         self.pilha.set_visible_child_name(pagina)
-        titulo = T.NAV[pagina][1] if pagina in T.NAV else {"detalhe": "Detalhes", "perfil": "Perfil"}[pagina]
-        self.titulo_barra.set_text(T.APP if pagina == "inicio" else f"{T.APP} · {titulo}")
         self.paginas[pagina].widget.get_vadjustment().set_value(0)
+        raiz = next((p for p, _r, _f in reversed(self._trilha) if p in T.NAV), "inicio")
+        self._sincronizando = True
+        for linha in self.nav.get_children():
+            if linha.pagina == raiz:
+                self.nav.select_row(linha)
+        self._sincronizando = False
+        self._desenhar_trilha()
+
+    def _desenhar_trilha(self):
+        for f in self.trilha.get_children():
+            f.destroy()
+        for i, (pagina, rotulo_, _f) in enumerate(self._trilha):
+            atual = i == len(self._trilha) - 1
+            b = Gtk.Button()
+            caixa = Gtk.Box(spacing=6)
+            if i == 0:
+                caixa.pack_start(Gtk.Image.new_from_icon_name("go-home-symbolic", Gtk.IconSize.BUTTON),
+                                 False, False, 0)
+            texto = rotulo(rotulo_)
+            texto.set_max_width_chars(28)
+            caixa.pack_start(texto, False, False, 0)
+            b.add(caixa)
+            css(b, "ms-passo", *(["ms-passo-atual"] if atual else []))
+            b.set_tooltip_text(rotulo_)
+            if not atual:
+                b.connect("clicked", lambda _b, n=i + 1: self._ir_trilha(n))
+            self.trilha.pack_start(b, False, False, 0)
+        self.trilha.show_all()
+        self.btn_voltar.set_sensitive(len(self._trilha) > 1)
+
+    def _ir_trilha(self, tamanho):
+        self._trilha = self._trilha[:tamanho]
+        self._mostrar()
 
     def ir_para(self, pagina):
         for linha in self.nav.get_children():
@@ -190,12 +232,15 @@ class Janela(Gtk.ApplicationWindow):
                 self.nav.unselect_all()
                 self.nav.select_row(linha)
 
-    def _empilhar(self, pagina):
-        self._historico.append(self.pilha.get_visible_child_name())
-        self._mostrar(pagina)
+    def _empilhar(self, pagina, rotulo_, restaurar):
+        if self._trilha and self._trilha[-1][0] == pagina:
+            self._trilha.pop()
+        self._trilha.append((pagina, rotulo_, restaurar))
+        self._mostrar()
 
     def voltar(self):
-        self._mostrar(self._historico.pop() if self._historico else "galeria")
+        if len(self._trilha) > 1:
+            self._ir_trilha(len(self._trilha) - 1)
 
     def _flutuantes(self, sobre):
         self.painel = Gtk.Revealer(valign=Gtk.Align.END, halign=Gtk.Align.CENTER,
@@ -280,7 +325,7 @@ class Janela(Gtk.ApplicationWindow):
         if not item.publica:
             selos.append(("Privada", False))
         detalhe = "Padrão do MintSkin" if item.oficial else \
-            f"{item.downloads} downloads · {data_br(item.publicada_em, hora=False)}"
+            f"{item.downloads} download{'' if item.downloads == 1 else 's'} · {data_br(item.publicada_em, hora=False)}"
         menu = None
         if dono:
             menu = [("Tornar privada" if item.publica else "Publicar na galeria",
@@ -500,16 +545,14 @@ class Janela(Gtk.ApplicationWindow):
                 break
 
     def abrir_detalhe(self, item):
-        self.paginas["detalhe"].mostrar(item)
-        self._empilhar("detalhe")
+        self._empilhar("detalhe", item.nome, lambda: self.paginas["detalhe"].mostrar(item))
 
     def abrir_perfil(self, autor_id):
         perfil = self.app.nuvem.perfil(autor_id)
         if not perfil:
             self.avisar("Perfil não encontrado.")
             return
-        self.paginas["perfil"].mostrar(perfil)
-        self._empilhar("perfil")
+        self._empilhar("perfil", perfil.nome, lambda: self.paginas["perfil"].mostrar(perfil))
 
     def favoritar(self, item, favorito):
         self._rapido("Favoritar", lambda: self.app.nuvem.favoritar(item, favorito))
