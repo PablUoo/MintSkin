@@ -12,7 +12,7 @@ from ..dominio.erros import MintSkinErro, SkinInvalida
 from ..dominio.preferencias import Preferencias
 from ..dominio.skin import Skin
 from . import gsettings
-from .caminhos import AUTOSTART, HOME, INSTALADOS, LOGIN_HELPER, PLANK_CFG, SPICES
+from .caminhos import AUTOSTART, AUTOSTART_SISTEMA, HOME, INSTALADOS, LOGIN_HELPER, PLANK_CFG, SPICES
 from .perfil import (CHAVES_FONTE, PLANK, TEMAS_ICONE_SISTEMA, aplicar_perfil, caminho_de_uri,
                      capturar_perfil, generalizar, ler_perfil, perfil_da_skin, resetar_ausentes,
                      sem_aspas, substituidor, valor_no_perfil)
@@ -208,8 +208,58 @@ def generalizar_spices(pasta_spices, pasta_arquivos, procurar_em=()):
     return len(usados)
 
 
+def _ler_desktop(arquivo):
+    """Chaves do grupo [Desktop Entry] de um .desktop."""
+    dados, no_grupo = {}, False
+    try:
+        linhas = Path(arquivo).read_text(encoding="utf-8", errors="ignore").splitlines()
+    except OSError:
+        return dados
+    for l in linhas:
+        l = l.strip()
+        if l.startswith("["):
+            no_grupo = l == "[Desktop Entry]"
+        elif no_grupo and "=" in l:
+            k, v = l.split("=", 1)
+            dados[k.strip()] = v.strip()
+    return dados
+
+
+def _habilitada(dados):
+    # "Aplicativos de inicializacao" desliga gravando enabled=false, sem apagar o arquivo
+    return dados.get("Hidden", "").lower() != "true" \
+        and dados.get("X-GNOME-Autostart-enabled", "true").lower() != "false"
+
+
+def _autostarts_do_plank():
+    """{nome: (arquivo, dados)} das entradas de inicializacao que abrem o Plank.
+
+    Qualquer nome de arquivo, do usuario ou do sistema; a do usuario sobrepoe a de mesmo nome.
+    """
+    entradas = {}
+    for pasta in (AUTOSTART_SISTEMA, AUTOSTART):
+        if pasta.is_dir():
+            for f in pasta.glob("*.desktop"):
+                entradas[f.name] = (f, _ler_desktop(f))
+    return {n: (f, d) for n, (f, d) in entradas.items()
+            if any(os.path.basename(p) == "plank" for p in d.get("Exec", "").split())}
+
+
 def _dock_ativo():
-    return (AUTOSTART / "plank.desktop").is_file()
+    return any(_habilitada(d) for _, d in _autostarts_do_plank().values())
+
+
+def _tirar_plank_da_inicializacao(exceto=None):
+    """Apaga as entradas do usuario e anula (Hidden=true) as do sistema."""
+    for nome, (f, _) in _autostarts_do_plank().items():
+        if nome == exceto:
+            continue
+        if f.parent == AUTOSTART:
+            f.unlink(missing_ok=True)
+        if (AUTOSTART_SISTEMA / nome).is_file():
+            AUTOSTART.mkdir(parents=True, exist_ok=True)
+            (AUTOSTART / nome).write_text("[Desktop Entry]\nType=Application\nName=Plank\n"
+                                          "Exec=plank\nHidden=true\n", encoding="utf-8")
 
 
 def _instalar_recursos(skin, log):
@@ -292,14 +342,15 @@ def _plank(skin, dock, subst, log):
         for f in (skin / "plank/launchers").glob("*.dockitem"):
             (dst / f.name).write_text(subst(f.read_text(encoding="utf-8", errors="ignore")),
                                       encoding="utf-8")
-    autostart = AUTOSTART / "plank.desktop"
     if not dock:
-        autostart.unlink(missing_ok=True)
+        _tirar_plank_da_inicializacao()
         log("dock desligado")
         return
     if not shutil.which("plank"):
         log("aviso: Plank nao instalado — instale com: sudo apt install plank")
         return
+    autostart = AUTOSTART / "plank.desktop"
+    _tirar_plank_da_inicializacao(exceto=autostart.name)   # evita dois Plank no login
     AUTOSTART.mkdir(parents=True, exist_ok=True)
     autostart.write_text("[Desktop Entry]\nType=Application\nName=Plank\nExec=plank\n"
                          "Icon=plank\nX-GNOME-Autostart-enabled=true\n", encoding="utf-8")

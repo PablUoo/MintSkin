@@ -13,6 +13,7 @@ CACHE = Path(HOME, ".cache/mintskin")
 SPICES = Path(HOME, ".config/cinnamon/spices")
 PLANK_CFG = Path(HOME, ".config/plank")
 AUTOSTART = Path(HOME, ".config/autostart")
+AUTOSTART_SISTEMA = Path("/etc/xdg/autostart")
 
 _REPO = Path(__file__).resolve().parents[2]
 SKINS_MINTSKIN = [p for p in (Path("/usr/share/mintskin/skins"), _REPO / "skins") if p.is_dir()]

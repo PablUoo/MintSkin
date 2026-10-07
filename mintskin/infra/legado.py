@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 from ..dominio.skin import Origem, Skin
-from .cinnamon import generalizar_spices
+from .cinnamon import _habilitada, _ler_desktop, generalizar_spices
 from .perfil import caminho_de_uri, generalizar
 
 MARCA = "migrado_mac_sh"
@@ -38,7 +38,7 @@ class MigradorMacSh:
         skin = Skin(id=self.repo.novo_id(nome), nome=nome, origem=Origem.USUARIO,
                     descricao="Visual do Linux Mint antes do macOS (backup do mac.sh).",
                     autor=self.usuario, criado_em=criado, atualizado_em=criado,
-                    dock=(b / "plank.desktop").is_file())
+                    dock=(b / "plank.desktop").is_file() and _habilitada(_ler_desktop(b / "plank.desktop")))
 
         def preencher(tmp):
             (tmp / "arquivos").mkdir()
